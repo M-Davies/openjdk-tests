@@ -50,6 +50,9 @@ JTREG_CONC ?= 0
 # Allow JTREG_CONC be set via parameter
 ifeq ($(JTREG_CONC), 0)
 	JTREG_CONC := $(CONC)
+	ifeq ($(JTREG_CONC), 0)
+		JTREG_CONC := 1
+	endif
 endif
 EXTRA_JTREG_OPTIONS += -concurrency:$(JTREG_CONC)
 
@@ -77,7 +80,7 @@ JTREG_BASIC_OPTIONS += $(EXTRA_JTREG_OPTIONS)
 
 ifndef JRE_IMAGE
 	JRE_ROOT := $(TEST_JDK_HOME)
-	JRE_IMAGE := $(JRE_ROOT)$(D)..$(D)j2re-image
+	JRE_IMAGE := $(subst j2sdk-image,j2re-image,$(JRE_ROOT))
 endif
 
 ifdef OPENJDK_DIR 
@@ -102,16 +105,19 @@ endif
 JDK_NATIVE_OPTIONS :=
 JVM_NATIVE_OPTIONS :=
 CUSTOM_NATIVE_OPTIONS :=
-ifdef TESTIMAGE_PATH
-	JDK_NATIVE_OPTIONS := -nativepath:"$(TESTIMAGE_PATH)$(D)jdk$(D)jtreg$(D)native"
-	ifeq ($(JDK_IMPL), hotspot)
-		JVM_NATIVE_OPTIONS := -nativepath:"$(TESTIMAGE_PATH)$(D)hotspot$(D)jtreg$(D)native"
-	else ifeq ($(JDK_IMPL), openj9)
-		JVM_NATIVE_OPTIONS := -nativepath:"$(TESTIMAGE_PATH)$(D)openj9"
-	endif
-	ifneq (,$(findstring /hotspot/, $(JDK_CUSTOM_TARGET))) 
-		CUSTOM_NATIVE_OPTIONS := $(JVM_NATIVE_OPTIONS)
-	else
-		CUSTOM_NATIVE_OPTIONS := $(JDK_NATIVE_OPTIONS)
+
+ifneq ($(JDK_VERSION),8)
+	ifdef TESTIMAGE_PATH
+		JDK_NATIVE_OPTIONS := -nativepath:"$(TESTIMAGE_PATH)$(D)jdk$(D)jtreg$(D)native"
+		ifeq ($(JDK_IMPL), hotspot)
+			JVM_NATIVE_OPTIONS := -nativepath:"$(TESTIMAGE_PATH)$(D)hotspot$(D)jtreg$(D)native"
+		else ifeq ($(JDK_IMPL), openj9)
+			JVM_NATIVE_OPTIONS := -nativepath:"$(TESTIMAGE_PATH)$(D)openj9"
+		endif
+		ifneq (,$(findstring /hotspot/, $(JDK_CUSTOM_TARGET))) 
+			CUSTOM_NATIVE_OPTIONS := $(JVM_NATIVE_OPTIONS)
+		else
+			CUSTOM_NATIVE_OPTIONS := $(JDK_NATIVE_OPTIONS)
+		endif
 	endif
 endif
