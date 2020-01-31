@@ -44,6 +44,8 @@ def setupEnv() {
 	SSH_AGENT_CREDENTIAL = params.SSH_AGENT_CREDENTIAL ? params.SSH_AGENT_CREDENTIAL : ""
 	KEEP_WORKSPACE = params.KEEP_WORKSPACE ? params.KEEP_WORKSPACE : false
 	OPENJ9_SHA = params.OPENJ9_SHA ? params.OPENJ9_SHA : ""
+	SLACK_SEND = params.SLACK_SEND ? params.SLACK_SEND : false
+
 	env.USER_CREDENTIALS_ID = params.USER_CREDENTIALS_ID ? params.USER_CREDENTIALS_ID : ""
 	env.TEST_JDK_HOME = "$WORKSPACE/openjdkbinary/j2sdk-image"
 	env.JVM_VERSION = params.JVM_VERSION ? params.JVM_VERSION : ""
@@ -504,6 +506,7 @@ def post(output_name) {
 def testBuild() {
 	TIME_LIMIT =  params.TIME_LIMIT ? params.TIME_LIMIT.toInteger() : 10
 	timeout(time: TIME_LIMIT, unit: 'HOURS') {
+		def buildAborted = false
 		try {
 			addJobDescription()
 
@@ -528,13 +531,41 @@ def testBuild() {
 					post("${env.BUILD_LIST}")
 				}
 			}
+		} catch (InterruptedException e) {
+			buildAborted = true
 		} finally {
 			if (!params.KEEP_WORKSPACE) {
 				// cleanWs() does not work in some cases, so set opts below
 				cleanWs notFailBuild: true, disableDeferredWipeout: true, deleteDirs: true
 			}
-		}
 
+			// Send slack message
+			if (params.SLACK_SEND) {
+
+				def slackchannel = '#grinder-bot' //default channel
+				def jobUrl = currentBuild.getAbsoluteUrl()
+				def jobDuration = currentBuild.getDurationString()
+				def jobResult = currentBuild.currentResult
+
+				// Parse out user email
+				String userRegex = BUILD_DISPLAY_NAME 
+				def u = userRegex =~ /[A-Za-z0-9._%+-]+\.?[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]+/
+				def match = u[0]
+
+				if (jobResult == null || buildAborted) { // job aborted
+					slackSend channel: slackchannel, color: '#696969', message: "ABORTED: ${JOB_NAME} #${BUILD_NUMBER} (<${jobUrl}|Open>)\nDuration: ${jobDuration}\nUser: ${match}"
+				}
+				else if (jobResult == "UNSTABLE" || jobResult == "FAILURE"){ // job unstable or failed
+					slackSend channel: slackchannel, color: 'danger', message: "${jobResult}: ${JOB_NAME} #${BUILD_NUMBER} (<${jobUrl}|Open>)\nDuration: ${jobDuration}\nUser: ${match}"
+				}
+				else if (jobResult == "SUCCESS") { // job succeeded
+					slackSend channel: slackchannel, color: 'good', message: "${jobResult}: ${JOB_NAME} #${BUILD_NUMBER} (<${jobUrl}|Open>)\nDuration: ${jobDuration}\nUser: ${match}"
+				} 
+				else {
+					echo "jobResult not set correctly (value is = ${jobResult}). Slack message not sent." 
+				}
+			}
+		}
 	}
 }
 
