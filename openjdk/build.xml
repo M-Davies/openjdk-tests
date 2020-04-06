@@ -133,7 +133,7 @@
 						</if>
 					</else>
 				</if>
-				<property name="regressionRepo" value="https://github.com/AdoptOpenJDK/${jdkName}.git" />
+				<property name="regressionRepo" value="https://github.com/M-Davies/${jdkName}.git" />
 			</else>
 		</if>
 		<if>
@@ -149,7 +149,7 @@
 				<if>
 					<contains string="${JDK_IMPL}" substring="hotspot"/>
 					<then>
-						<property name="defaultBranch" value="-b dev"/>
+						<property name="defaultBranch" value="-b evalarrays"/>
 					</then>
 					<else>
 						<property name="defaultBranch" value=""/>
