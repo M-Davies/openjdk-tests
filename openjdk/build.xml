@@ -149,7 +149,7 @@
 				<if>
 					<contains string="${JDK_IMPL}" substring="hotspot"/>
 					<then>
-						<property name="defaultBranch" value="-b filegroup"/>
+						<property name="defaultBranch" value="-b earlyreturns"/>
 					</then>
 					<else>
 						<property name="defaultBranch" value=""/>
