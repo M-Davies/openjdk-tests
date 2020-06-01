@@ -140,12 +140,7 @@ if (PLATFORM_MAP.containsKey(params.PLATFORM)) {
                 def gitConfig = scm.getUserRemoteConfigs().get(0)
 		    
                 // Some Adopt windows machines don't set HOME in cygwin https://github.com/AdoptOpenJDK/openjdk-tests/issues/1803
-                ref_cache = ""
-                if (params.PLATFORM.contains('windows')) {
-                    ref_cache = "${env.HOMEPATH}/openjdk_cache"
-                } else {
-                    ref_cache = "${HOME}/openjdk_cache"
-                }  
+                ref_cache = "${env.HOME}/openjdk_cache"
 		
                 checkout scm: [$class: 'GitSCM',
                     branches: [[name: "${scm.branches[0].name}"]],
